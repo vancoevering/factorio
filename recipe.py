@@ -1,4 +1,4 @@
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, asdict, fields
 from sdecimal import SDecimal
 
 DEF_AMOUNT = 1
@@ -12,6 +12,10 @@ class ItemCount:
     type: str
     amount: SDecimal = DEF_AMOUNT
 
+    @classmethod
+    def from_dict(cls, d: dict):
+        return cls(d["name"], d["type"], SDecimal.sanitize(d.get("amount", DEF_AMOUNT)))
+
 
 @dataclass
 class Ingredient(ItemCount):
@@ -19,10 +23,11 @@ class Ingredient(ItemCount):
 
     @classmethod
     def from_dict(cls, d: dict):
+        _super = super().from_dict(d)
         return cls(
-            d["name"],
-            d["type"],
-            SDecimal.sanitize(d.get("amount", DEF_AMOUNT)),
+            _super.name,
+            _super.type,
+            _super.amount,
             SDecimal.sanitize(d.get("catalyst_amount", DEF_CATALYST)),
         )
 
@@ -30,8 +35,7 @@ class Ingredient(ItemCount):
         net_amount = self.amount - self.catalyst_amount
         self_dict = asdict(self)
         self_dict["amount"] = SDecimal(net_amount)
-        self_dict["catalyst_amount"] = SDecimal(0)
-        return ItemCount(**self_dict)
+        return ItemCount.from_dict(self_dict)
 
 
 @dataclass
@@ -55,8 +59,7 @@ class Product(Ingredient):
         # The 'Law of Large Numbers' suggests this should be true at Factorio scales
         # https://en.wikipedia.org/wiki/Law_of_large_numbers
         super_dict["amount"] = super_net.amount * self.probability
-        super_dict["probability"] = SDecimal(1)
-        return self.__class__(**super_dict)
+        return ItemCount.from_dict(super_dict)
 
 
 @dataclass
@@ -87,7 +90,7 @@ class Recipe(BaseRecipe):
         self_dict = asdict(self)
         self_dict["ingredients"] = self.net_ingredients()
         self_dict["products"] = self.net_products()
-        return self.__class__(**self_dict)
+        return NetRecipe(**self_dict)
 
     def net_ingredients(self):
         return self._get_net_items(self.ingredients)
@@ -102,7 +105,25 @@ class Recipe(BaseRecipe):
 
 @dataclass
 class NetRecipe(BaseRecipe):
-    @classmethod
-    def from_recipe(recipe: Recipe):
-        net_recipe = recipe.net()
-        pass
+    def normalize_to_item(self, item: ItemCount):
+        return self.normalize_to(item.amount)
+
+    def normalize_to_energy(self):
+        return self.normalize_to(self.energy)
+
+    def normalize_to(self, val: SDecimal):
+        self_dict = asdict(self)
+        self_dict["ingredients"] = [
+            self._normalize_item_count_to(i, val) for i in self.ingredients
+        ]
+        self_dict["products"] = [
+            self._normalize_item_count_to(p, val) for p in self.products
+        ]
+        self_dict["energy"] = SDecimal(self.energy / val)
+        return self.__class__(**self_dict)
+
+    @staticmethod
+    def _normalize_item_count_to(item: ItemCount, val: SDecimal):
+        item_dict = asdict(item)
+        item_dict["amount"] = SDecimal(item.amount / val)
+        return ItemCount.from_dict(item_dict)
