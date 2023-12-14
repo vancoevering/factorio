@@ -13,6 +13,10 @@ def main():
     print(recipes)
     print(recipes["atomic-bomb"])
     print(recipes["uranium-processing"])
+    print(recipes["uranium-processing"].net())
+    print(recipes["steel-plate"])
+    print(recipes["kovarex-enrichment-process"])
+    print(recipes["kovarex-enrichment-process"].net())
 
 
 if __name__ == "__main__":
