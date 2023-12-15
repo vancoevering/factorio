@@ -10,13 +10,6 @@ def main():
     with recipes_file.open("r") as f:
         recipes_data = json.load(f)
         recipes = {r.name: r for r in [Recipe.from_dict(d) for d in recipes_data]}
-    # print(recipes)
-    # print(recipes["atomic-bomb"])
-    # print(recipes["uranium-processing"])
-    # print(recipes["uranium-processing"].net())
-    # print(recipes["steel-plate"])
-    # print(recipes["kovarex-enrichment-process"])
-    # print(recipes["kovarex-enrichment-process"].net())
     print(recipes["iron-gear-wheel"].net().normalize_to_energy())
     uranium_processing = recipes["uranium-processing"].net()
     print(uranium_processing)

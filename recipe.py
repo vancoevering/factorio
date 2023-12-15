@@ -127,3 +127,6 @@ class NetRecipe(BaseRecipe):
         item_dict = asdict(item)
         item_dict["amount"] = SDecimal(item.amount / val)
         return ItemCount.from_dict(item_dict)
+
+    def parallelize(self, operations: SDecimal):
+        raise NotImplementedError
