@@ -1,4 +1,5 @@
 from decimal import Decimal
+from operator import truediv
 
 DEF_QUANTIZE_EXP = "1.0000"
 
@@ -15,3 +16,9 @@ class SDecimal(Decimal):
 
     def __str__(self) -> str:
         return "{:,f}".format(self)
+
+    def __truediv__(self, __value):
+        return self.__class__(super().__truediv__(__value))
+
+    def __mul__(self, __value):
+        return self.__class__(super().__mul__(__value))

@@ -1,5 +1,7 @@
 from dataclasses import dataclass, asdict, fields
+import operator
 from sdecimal import SDecimal
+import dacite
 
 DEF_AMOUNT = 1
 DEF_CATALYST = 0
@@ -7,7 +9,7 @@ DEF_PROBABILITY = 1
 
 
 @dataclass
-class ItemCount:
+class ItemCountBase:
     name: str
     type: str
     amount: SDecimal = DEF_AMOUNT
@@ -18,7 +20,20 @@ class ItemCount:
 
 
 @dataclass
-class Ingredient(ItemCount):
+class ItemCount(ItemCountBase):
+    def __truediv__(self, divisor: SDecimal):
+        self_dict = asdict(self)
+        self_dict["amount"] = self.amount / divisor
+        return ItemCount.from_dict(self_dict)
+
+    def __mul__(self, multiplier: SDecimal):
+        self_dict = asdict(self)
+        self_dict["amount"] = self.amount * multiplier
+        return ItemCount.from_dict(self_dict)
+
+
+@dataclass
+class Ingredient(ItemCountBase):
     catalyst_amount: SDecimal = DEF_CATALYST
 
     @classmethod
@@ -105,6 +120,12 @@ class Recipe(BaseRecipe):
 
 @dataclass
 class NetRecipe(BaseRecipe):
+    def normalize_to_ingredient(self, index: int):
+        return self.normalize_to_item(self.ingredients[index])
+
+    def normalize_to_product(self, index: int):
+        return self.normalize_to_item(self.products[index])
+
     def normalize_to_item(self, item: ItemCount):
         return self.normalize_to(item.amount)
 
@@ -112,21 +133,33 @@ class NetRecipe(BaseRecipe):
         return self.normalize_to(self.energy)
 
     def normalize_to(self, val: SDecimal):
+        return self / val
+
+    def parallelize(self, crafters: SDecimal):
+        """Return a recipe where multiple crafters work in parallel."""
+        # ingredients and products should be multiplied by number of crafters
+        self_times_crafters = self * crafters
+        parallel_dict = asdict(self_times_crafters)
+        # ... but the time it takes should stay the same
+        parallel_dict["energy"] = self.energy
+
+        # we change the name to indicate this is a truly new recipe
+        parallel_dict["name"] = self.name + f"-w/{crafters}-crafters"
+        return self.from_dict(parallel_dict)
+
+    @classmethod
+    def from_dict(cls, d: dict):
+        return dacite.from_dict(data_class=cls, data=d)
+
+    def _apply_binary_operator(self, op, input: SDecimal):
         self_dict = asdict(self)
-        self_dict["ingredients"] = [
-            self._normalize_item_count_to(i, val) for i in self.ingredients
-        ]
-        self_dict["products"] = [
-            self._normalize_item_count_to(p, val) for p in self.products
-        ]
-        self_dict["energy"] = SDecimal(self.energy / val)
+        self_dict["ingredients"] = [op(i, input) for i in self.ingredients]
+        self_dict["products"] = [op(p, input) for p in self.products]
+        self_dict["energy"] = op(self.energy, input)
         return self.__class__(**self_dict)
 
-    @staticmethod
-    def _normalize_item_count_to(item: ItemCount, val: SDecimal):
-        item_dict = asdict(item)
-        item_dict["amount"] = SDecimal(item.amount / val)
-        return ItemCount.from_dict(item_dict)
+    def __truediv__(self, divisor: SDecimal):
+        return self._apply_binary_operator(operator.truediv, divisor)
 
-    def parallelize(self, operations: SDecimal):
-        raise NotImplementedError
+    def __mul__(self, multiplier: SDecimal):
+        return self._apply_binary_operator(operator.mul, multiplier)
