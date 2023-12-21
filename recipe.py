@@ -1,7 +1,9 @@
-from dataclasses import dataclass, asdict, fields
 import operator
-from sdecimal import SDecimal
+from dataclasses import asdict, dataclass
+
 import dacite
+
+from sdecimal import SDecimal
 
 DEF_AMOUNT = 1
 DEF_CATALYST = 0
@@ -146,6 +148,14 @@ class NetRecipe(BaseRecipe):
         # we change the name to indicate this is a truly new recipe
         parallel_dict["name"] = self.name + f"-w/{crafters}-crafters"
         return self.from_dict(parallel_dict)
+
+    def target_product_per_energy(self, product_index: int, target_count: SDecimal):
+        # blue_science.normalize_to_product(0)
+        # .parallelize(SDecimal(12))
+        # .normalize_to_energy()
+        energy_per_product = self.normalize_to_product(product_index).energy
+        parallels = energy_per_product * target_count
+        return self.parallelize(parallels).normalize_to_energy()
 
     @classmethod
     def from_dict(cls, d: dict):

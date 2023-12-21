@@ -1,7 +1,8 @@
-from sdecimal import SDecimal
-from recipe import Recipe
-from pathlib import Path
 import json
+from pathlib import Path
+
+from recipe import Recipe
+from sdecimal import SDecimal
 
 DEF_DATA_PATH = Path(__file__).parent / "data"
 
@@ -33,6 +34,10 @@ def main():
         blue_science.normalize_to_product(0)
         .parallelize(SDecimal(12))
         .normalize_to_energy()
+    )
+    print(blue_science.target_product_per_energy(0, SDecimal(1)))
+    print(
+        recipes["electronic-circuit"].net().target_product_per_energy(0, SDecimal(15))
     )
 
 
