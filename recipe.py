@@ -175,9 +175,6 @@ class NetRecipe(BaseRecipe):
         return self._apply_binary_operator(operator.mul, multiplier)
 
 
-# Process = list[NetRecipe]
-
-
 @dataclass
 class ProcessNodeChild:
     recipe: NetRecipe
@@ -221,40 +218,3 @@ class ProcessFactory:
         return ProcessNodeChild(
             recipe, [self.get_process(ing.name) for ing in recipe.ingredients]
         )
-
-
-# class ProcessFactory:
-#     def __init__(self, recipes: list[NetRecipe]) -> None:
-#         self.recipes = recipes
-#         self._processes: dict[str, ProcessNode] = {}
-
-#         # Create a map of products to the recipes that create them
-#         # TODO: Do we need this AND _processes? Consolidation?
-#         self._products: dict[str, list[NetRecipe]] = {}
-#         for r in self.recipes:
-#             for p in r.products:
-#                 if p.name not in self._products:
-#                     self._products[p.name] = []
-#                 self._products[p.name].append(r)
-
-#     def get_process(self, product: str) -> ProcessNode:
-#         return self._get_process(product, [])
-
-#     def _get_process(self, product: str, process_chain: Process):
-#         # cache processes to reduce iterations
-#         process = self._processes.get(product)
-#         if process is not None:
-#             return [r for r in process.recipes if not any((r.recipe in process_chain))]
-
-#         recipes = self._products.get(product)
-#         if recipes is None:
-#             # We have no recipes that produce this product
-#             return None
-
-#         process = []
-#         for r in recipes:
-#             for i in r.ingredients:
-#                 process = self._get_process(i.name, process_chain.append(r))
-#                 if process is not None:
-#                     process.append(process)
-#         return process
