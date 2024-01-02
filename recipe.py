@@ -180,11 +180,24 @@ class ProcessNodeChild:
     recipe: NetRecipe
     processes: list["ProcessNode"]
 
+    def to_printable_str(self, _depth: int=0):
+        s = f"{'.'*_depth}{self.recipe.__class__.__name__}({self.recipe.name})"
+        for p in self.processes:
+            s = f"{s}\n{p.to_printable_str(_depth+1)}"
+        return s
+
 
 @dataclass
 class ProcessNode:
     product: str
     recipes: list[ProcessNodeChild]
+
+    def to_printable_str(self, _depth: int=0):
+        s = f"{'.'*_depth}{self.__class__.__name__}({self.product})"
+        for r in self.recipes:
+            # s = s + f"\n{'.'*_depth}"
+            s = f"{s}\n{r.to_printable_str(_depth+1)}"
+        return s
 
 
 class ProcessFactory:

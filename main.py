@@ -20,6 +20,7 @@ def main():
     uranium_235 = processor.get_process("uranium-235")
     for r in uranium_235.recipes:
         print("235 from:", r.recipe.name, r, "\n")
+    print(uranium_235.to_printable_str())
 
 
 if __name__ == "__main__":
